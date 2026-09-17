@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecurAI — AI-Powered Code Auditor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.383.0/dist/umd/lucide.js"></script>
+<style>
+  :root{
+    --bg-void:#0A0D11;
+    --bg-panel:#11161C;
+    --bg-panel-raised:#161D25;
+    --bg-inset:#0C1015;
+    --border:#212931;
+    --border-strong:#303C47;
+    --text-primary:#E7EDF3;
+    --text-secondary:#8C99A6;
+    --text-tertiary:#57626D;
+
+    --emerald:#16E8A8;
+    --emerald-soft:rgba(22,232,168,.13);
+    --crimson:#FF3E5E;
+    --crimson-soft:rgba(255,62,94,.13);
+    --amber:#FFB13D;
+    --amber-soft:rgba(255,177,61,.13);
+    --azure:#3E9CFF;
+    --azure-soft:rgba(62,156,255,.13);
+
+    --font-display:'Space Grotesk',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html{color-scheme:dark;}
+
+  body{
+    background:
+      radial-gradient(1200px 650px at 50% -12%, rgba(255,255,255,.05), transparent 62%),
+      radial-gradient(900px 640px at 105% 100%, rgba(22,232,168,.04), transparent 60%),
+      var(--bg-void);
+    color:var(--text-primary);
+    font-family:var(--font-display);
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+    background-attachment:fixed;
+  }
+
+  ::selection{ background:var(--emerald-soft); color:var(--emerald); }
+
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+
+  :focus-visible{
+    outline:2px solid var(--emerald);
+    outline-offset:2px;
+    border-radius:3px;
+  }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:1360px;
+    margin:0 auto;
+    padding:0 28px 100px;
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky;
+    top:0;
+    z-index:20;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    background:rgba(10,13,17,.72);
+    border-bottom:1px solid var(--border);
+  }
+  .nav-inner{
+    max-width:1360px;
+    margin:0 auto;
+    padding:16px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:16px;
+  }
+  .brand{ display:flex; align-items:center; gap:11px; }
+  .brand-icon{
+    width:36px; height:36px;
+    border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg, var(--emerald-soft), transparent);
+    border:1px solid rgba(22,232,168,.35);
+    color:var(--emerald);
+    flex-shrink:0;
+  }
+  .brand-icon svg{ width:19px; height:19px; }
+  .brand-text h1{
+    font-size:18px; font-weight:700; letter-spacing:-.01em; line-height:1.1;
+  }
+  .brand-text p{
+    font-size:12px; color:var(--text-tertiary); margin-top:2px; font-weight:500;
+  }
+  /* ---------- LAYOUT ---------- */
+  .hero-row{ padding-top:36px; }
+  .hero-copy{ max-width:640px; margin-bottom:28px; }
+  .hero-copy h2{
+    font-size:27px; font-weight:700; letter-spacing:-.015em; margin-bottom:8px;
+  }
+  .hero-copy p{ color:var(--text-secondary); font-size:14.5px; }
+
+  .apikey-bar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 18px;
+    margin-bottom:20px;
+  }
+  .apikey-field{
+    display:flex; align-items:center; gap:8px;
+    flex:1; min-width:260px;
+    background:var(--bg-inset);
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+    padding:8px 12px;
+  }
+  .apikey-field svg{ width:15px; height:15px; color:var(--text-tertiary); flex-shrink:0; }
+  .apikey-field input{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text-primary);
+    font-family:var(--font-mono);
+    font-size:12.5px;
+  }
+  .apikey-field input::placeholder{ color:var(--text-tertiary); }
+  .apikey-field.err{ border-color:var(--crimson); }
+  .apikey-actions{ display:flex; gap:8px; }
+  .apikey-btn{
+    background:var(--bg-panel-raised);
+    border:1px solid var(--border-strong);
+    color:var(--text-secondary);
+    font-size:12px; font-weight:600;
+    padding:8px 14px;
+    border-radius:7px;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .apikey-btn:hover{ color:var(--text-primary); border-color:var(--text-tertiary); }
+  .apikey-btn.primary{ color:#06110D; background:linear-gradient(135deg, var(--emerald), #7CFFD4); border:none; }
+  .apikey-meta{ display:flex; flex-direction:column; gap:3px; font-size:11.5px; min-width:220px; }
+  .apikey-status{ font-family:var(--font-mono); font-weight:600; }
+  .apikey-status.ok{ color:var(--emerald); }
+  .apikey-status.warn{ color:var(--text-tertiary); }
+  .apikey-status.error{ color:var(--crimson); }
+  .apikey-meta a{ color:var(--azure); text-decoration:none; }
+  .apikey-meta a:hover{ text-decoration:underline; }
+
+  .scan-error{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:40px 20px;
+    border:1px solid var(--crimson);
+    background:var(--crimson-soft);
+    border-radius:10px;
+    color:var(--text-primary);
+  }
+  .scan-error h4{ font-size:15px; font-weight:700; margin-bottom:6px; color:var(--crimson); }
+  .scan-error p{ color:var(--text-secondary); font-size:13.5px; max-width:460px; }
+
+  .audit-grid{
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:20px;
+    align-items:start;
+  }
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+  }
+
+  /* ---------- EDITOR ---------- */
+  .editor-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--bg-panel-raised);
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .editor-tabs{ display:flex; align-items:center; gap:10px; }
+  .dots{ display:flex; gap:5px; margin-right:4px; }
+  .dots span{ width:8px; height:8px; border-radius:50%; background:var(--border-strong); }
+  .file-tab{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--text-secondary);
+  }
+  .file-tab svg{ width:14px; height:14px; color:var(--text-tertiary); }
+  select#langSelect{
+    background:var(--bg-inset);
+    border:1px solid var(--border-strong);
+    color:var(--text-secondary);
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:5px 9px;
+    border-radius:6px;
+  }
+  .editor-body{
+    position:relative;
+    display:flex;
+    height:380px;
+    background:var(--bg-inset);
+  }
+  .gutter{
+    width:46px;
+    flex-shrink:0;
+    padding:14px 0;
+    text-align:right;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:22px;
+    color:var(--text-tertiary);
+    border-right:1px solid var(--border);
+    overflow:hidden;
+    user-select:none;
+  }
+  .gutter div{ padding-right:12px; }
+  #codeInput{
+    flex:1;
+    resize:none;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:var(--text-primary);
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:22px;
+    padding:14px 16px;
+    tab-size:4;
+  }
+  #codeInput::placeholder{ color:var(--text-tertiary); }
+
+  .scan-progress{
+    position:absolute;
+    left:0; right:0; top:0;
+    height:2px;
+    overflow:hidden;
+    opacity:0;
+    pointer-events:none;
+  }
+  .scan-progress.active{ opacity:1; }
+  .scan-progress::after{
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    left:-35%;
+    width:35%;
+    background:linear-gradient(90deg, transparent, var(--emerald), transparent);
+    animation:scanMove 1.6s ease-in-out infinite;
+  }
+  @keyframes scanMove{
+    0%{ left:-35%; }
+    100%{ left:100%; }
+  }
+
+  .editor-footer{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px;
+    border-top:1px solid var(--border);
+    background:var(--bg-panel-raised);
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--text-tertiary);
+  }
+
+  /* ---------- CONSOLE (sidebar) ---------- */
+  .console-panel{ display:flex; flex-direction:column; height:100%; }
+  .console-head{
+    padding:13px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--bg-panel-raised);
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:600; color:var(--text-secondary);
+  }
+  .console-head svg{ width:14px; height:14px; color:var(--emerald); }
+  .engine-list{ padding:12px 16px; display:flex; flex-direction:column; gap:9px; }
+  .engine-row{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; color:var(--text-secondary);
+  }
+  .engine-row .led{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--emerald);
+    flex-shrink:0;
+  }
+  .console-stats{
+    margin-top:auto;
+    border-top:1px solid var(--border);
+    padding:13px 16px;
+    display:flex; flex-direction:column; gap:9px;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--text-tertiary);
+  }
+  .console-stats .row{ display:flex; justify-content:space-between; }
+  .console-stats .row b{ color:var(--text-secondary); font-weight:600; }
+
+  .console-log{
+    padding:12px 16px;
+    border-top:1px solid var(--border);
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--emerald);
+    min-height:20px;
+    display:none;
+  }
+  .console-log.show{ display:block; }
+  .console-log span{ display:block; opacity:0; animation:logIn .25s ease forwards; }
+  @keyframes logIn{ to{ opacity:1; } }
+
+  /* ---------- RUN BAR ---------- */
+  .run-bar{
+    margin-top:20px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .run-btn{
+    position:relative;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    padding:14px 30px;
+    border:none;
+    border-radius:9px;
+    font-family:var(--font-display);
+    font-size:14.5px; font-weight:600;
+    color:#06110D;
+    background:linear-gradient(135deg, var(--emerald), #7CFFD4);
+    box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 10px 24px -10px rgba(0,0,0,.6);
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .run-btn:hover{ transform:translateY(-1px); box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 14px 28px -8px rgba(0,0,0,.65); }
+  .run-btn:active{ transform:translateY(0); }
+  .run-btn:disabled{ opacity:.85; cursor:progress; transform:none; }
+  .run-btn svg{ width:17px; height:17px; }
+  .run-btn .spinner{ animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .run-hint{ font-size:12.5px; color:var(--text-tertiary); }
+
+  /* ---------- RESULTS ---------- */
+  #results{ margin-top:48px; display:none; }
+  #results.show{ display:block; }
+
+  .results-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:18px; flex-wrap:wrap; gap:10px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:16px;
+  }
+  .results-head h3{ font-size:19px; font-weight:700; letter-spacing:-.01em; }
+  .results-head .timestamp{ font-family:var(--font-mono); font-size:12px; color:var(--text-tertiary); }
+
+  .metric-strip{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:28px;
+  }
+  .metric{
+    background:var(--bg-panel);
+    padding:18px 16px;
+    border-top:2px solid var(--border-strong);
+  }
+  .metric .num{ font-family:var(--font-mono); font-size:28px; font-weight:700; line-height:1; }
+  .metric .lbl{ margin-top:7px; font-size:11.5px; color:var(--text-tertiary); font-weight:600; letter-spacing:.02em; }
+  .metric.total{ border-top-color:var(--text-secondary); }
+  .metric.total .num{ color:var(--text-primary); }
+  .metric.crit{ border-top-color:var(--crimson); }
+  .metric.crit .num{ color:var(--crimson); }
+  .metric.high{ border-top-color:var(--amber); }
+  .metric.high .num{ color:var(--amber); }
+  .metric.med{ border-top-color:#F4D35E; }
+  .metric.med .num{ color:#F4D35E; }
+  .metric.low{ border-top-color:var(--azure); }
+  .metric.low .num{ color:var(--azure); }
+
+  .clean-state{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:56px 20px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--bg-panel);
+  }
+  .clean-state .icon-wrap{
+    width:56px; height:56px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--emerald-soft); color:var(--emerald);
+    margin-bottom:16px;
+  }
+  .clean-state .icon-wrap svg{ width:28px; height:28px; }
+  .clean-state h4{ font-size:17px; font-weight:700; margin-bottom:6px; }
+  .clean-state p{ color:var(--text-secondary); font-size:13.5px; max-width:400px; }
+
+  .issue-list{ display:flex; flex-direction:column; gap:12px; }
+
+  .issue{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--border-strong);
+    border-radius:8px;
+    overflow:hidden;
+    opacity:0; transform:translateY(6px);
+    animation:cardIn .35s ease forwards;
+  }
+  @keyframes cardIn{ to{ opacity:1; transform:translateY(0); } }
+  .issue.sev-critical{ border-left-color:var(--crimson); }
+  .issue.sev-high{ border-left-color:var(--amber); }
+  .issue.sev-medium{ border-left-color:#F4D35E; }
+  .issue.sev-low{ border-left-color:var(--azure); }
+
+  .issue summary{
+    list-style:none;
+    cursor:pointer;
+    display:flex; align-items:center; gap:12px;
+    padding:15px 18px;
+    transition:background .15s ease;
+  }
+  .issue summary::-webkit-details-marker{ display:none; }
+  .issue summary:hover{ background:rgba(255,255,255,.015); }
+
+  .sev-badge{
+    display:flex; align-items:center; gap:5px;
+    padding:4px 9px;
+    border-radius:5px;
+    font-family:var(--font-mono);
+    font-size:10.5px; font-weight:700;
+    letter-spacing:.03em;
+    flex-shrink:0;
+  }
+  .sev-badge svg{ width:11px; height:11px; }
+  .sev-critical .sev-badge{ background:var(--crimson-soft); color:var(--crimson); }
+  .sev-high .sev-badge{ background:var(--amber-soft); color:var(--amber); }
+  .sev-medium .sev-badge{ background:rgba(244,211,94,.13); color:#F4D35E; }
+  .sev-low .sev-badge{ background:var(--azure-soft); color:var(--azure); }
+
+  .cat-tag{
+    font-size:11px; color:var(--text-tertiary); font-weight:500;
+    border:1px solid var(--border-strong);
+    padding:3px 8px; border-radius:5px;
+    flex-shrink:0;
+    display:none;
+  }
+  @media(min-width:640px){ .cat-tag{ display:block; } }
+
+  .issue-title{ flex:1; font-size:13.5px; font-weight:600; min-width:0; }
+  .issue-title .desc-inline{ display:none; }
+
+  .line-chip{
+    font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);
+    flex-shrink:0;
+  }
+  .chevron{ width:16px; height:16px; color:var(--text-tertiary); flex-shrink:0; transition:transform .2s ease; }
+  .issue[open] .chevron{ transform:rotate(180deg); }
+
+  .issue-body{ padding:0 18px 20px 18px; }
+  .issue-desc{ color:var(--text-secondary); font-size:13.5px; line-height:1.65; margin-bottom:16px; padding-left:0; }
+
+  .fix-box{
+    background:var(--bg-inset);
+    border:1px solid var(--border);
+    border-left:3px solid var(--emerald);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .fix-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 14px;
+    background:rgba(22,232,168,.05);
+    border-bottom:1px solid var(--border);
+  }
+  .fix-head-label{
+    display:flex; align-items:center; gap:7px;
+    font-size:11.5px; font-weight:600; color:var(--emerald);
+  }
+  .fix-head-label svg{ width:13px; height:13px; }
+  .copy-btn{
+    display:flex; align-items:center; gap:5px;
+    background:transparent; border:none; color:var(--text-tertiary);
+    font-size:11px; font-family:var(--font-display); font-weight:500;
+    padding:4px 7px; border-radius:5px;
+    transition:color .15s ease, background .15s ease;
+  }
+  .copy-btn:hover{ color:var(--text-primary); background:var(--bg-panel-raised); }
+  .copy-btn svg{ width:12px; height:12px; }
+  .fix-code{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    line-height:1.7;
+    color:#C9F7E5;
+    padding:14px 16px;
+    overflow-x:auto;
+    white-space:pre;
+  }
+
+  footer{
+    margin-top:72px;
+    padding-top:22px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; color:var(--text-tertiary);
+    flex-wrap:wrap; gap:10px;
+  }
+
+  @media(max-width:900px){
+    .audit-grid{ grid-template-columns:1fr; }
+    .metric-strip{ grid-template-columns:repeat(2,1fr); }
+    .metric:nth-child(1){ grid-column:1/-1; }
+  }
+  @media(max-width:520px){
+    .wrap{ padding:0 16px 80px; }
+    .nav-inner{ padding:14px 16px; }
+    .hero-copy h2{ font-size:22px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="brand-icon" id="lucide-shield"></div>
+      <div class="brand-text">
+        <h1>SecurAI</h1>
+        <p>AI-Powered Code Auditor</p>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="hero-row">
+    <div class="hero-copy">
+      <h2>Find the vulnerability before your users do.</h2>
+      <p>Paste a source file and SecurAI runs it through eight static analysis engines — injection flaws, hardcoded secrets, weak cryptography and common bug patterns — with a working fix for each finding.</p>
+    </div>
+
+    <div class="apikey-bar">
+      <div class="apikey-field" id="apiKeyField">
+        <i data-lucide="key-round"></i>
+        <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="apikey-actions">
+        <button class="apikey-btn primary" id="apiKeySave" type="button">Save key</button>
+        <button class="apikey-btn" id="apiKeyClear" type="button">Clear</button>
+      </div>
+      <div class="apikey-meta">
+        <span class="apikey-status" id="apiKeyStatus">No key saved yet</span>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini API key →</a>
+      </div>
+    </div>
+
+    <div class="audit-grid">
+      <div class="panel">
+        <div class="editor-topbar">
+          <div class="editor-tabs">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="file-tab" id="lucide-filecode-wrap">source<span id="fileExt">.py</span></div>
+          </div>
+          <select id="langSelect">
+            <option value="py">Python</option>
+            <option value="js">JavaScript</option>
+            <option value="ts">TypeScript</option>
+            <option value="java">Java</option>
+            <option value="go">Go</option>
+          </select>
+        </div>
+
+        <div class="editor-body">
+          <div class="scan-progress" id="scanProgress"></div>
+          <div class="gutter" id="gutter"><div>1</div></div>
+          <textarea id="codeInput" placeholder="// Paste your source code here — SecurAI will audit it for security flaws and bugs." spellcheck="false"></textarea>
+        </div>
+
+        <div class="editor-footer">
+          <span id="lineCount">1 line</span>
+          <span id="charCount">0 characters</span>
+        </div>
+      </div>
+
+      <div class="panel console-panel">
+        <div class="console-head"><span id="lucide-terminal"></span>Scan Console</div>
+        <div class="engine-list" id="engineList"></div>
+        <div class="console-log" id="consoleLog"></div>
+        <div class="console-stats">
+          <div class="row"><span>Engine</span><b>Gemini</b></div>
+          <div class="row"><span>Lines scanned</span><b id="statLines">—</b></div>
+          <div class="row"><span>Last scan</span><b id="statTime">—</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="run-bar">
+      <button class="run-btn" id="runBtn">
+        <span id="runIcon"></span>
+        <span id="runLabel">Run Security & Code Audit</span>
+      </button>
+      <span class="run-hint">Your code is sent from your browser straight to Google's Gemini API — it never touches any server of ours.</span>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="results-head">
+      <h3>Scan Report</h3>
+      <span class="timestamp" id="reportTime"></span>
+    </div>
+
+    <div id="metricStrip" class="metric-strip"></div>
+    <div id="issueContainer"></div>
+  </div>
+
+  <footer>
+    <span>SecurAI — audits are generated live by Gemini; your code and key stay in your browser.</span>
+    <span id="engineLabel">Engine: —</span>
+  </footer>
+</div>
+
+<script>
+lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+
+/* -------------------- ICONS -------------------- */
+function icon(name, size){
+  const i = document.createElement('i');
+  i.setAttribute('data-lucide', name);
+  i.style.width = (size||16)+'px';
+  i.style.height = (size||16)+'px';
+  return i;
+}
+document.getElementById('lucide-shield').appendChild(icon('shield-check', 19));
+document.getElementById('lucide-terminal').replaceWith((()=>{ const s=document.createElement('span'); s.style.display='flex'; s.appendChild(icon('terminal',14)); s.append(' Scan Console'); return s; })());
+const fcWrap = document.getElementById('lucide-filecode-wrap');
+fcWrap.prepend(icon('file-code-2',14));
+
+/* -------------------- EDITOR + GUTTER -------------------- */
+const codeInput = document.getElementById('codeInput');
+const gutter = document.getElementById('gutter');
+const lineCount = document.getElementById('lineCount');
+const charCount = document.getElementById('charCount');
+const langSelect = document.getElementById('langSelect');
+const fileExt = document.getElementById('fileExt');
+
+const extMap = { py:'.py', js:'.js', ts:'.ts', java:'.java', go:'.go' };
+langSelect.addEventListener('change', ()=>{ fileExt.textContent = extMap[langSelect.value]; });
+
+function refreshGutter(){
+  const lines = codeInput.value.split('\n').length;
+  let html = '';
+  for(let i=1;i<=lines;i++){ html += '<div>'+i+'</div>'; }
+  gutter.innerHTML = html;
+  lineCount.textContent = lines + (lines===1 ? ' line' : ' lines');
+  charCount.textContent = codeInput.value.length + ' characters';
+}
+codeInput.addEventListener('input', refreshGutter);
+codeInput.addEventListener('scroll', ()=>{ gutter.style.transform = 'translateY(-'+codeInput.scrollTop+'px)'; });
+refreshGutter();
+
+/* -------------------- ENGINE LIST -------------------- */
+const engines = ['SQL Injection','Command Injection','Hardcoded Secrets','Insecure Deserialization','Weak Cryptography','Cross-Site Scripting','Debug Exposure','Code Smells'];
+const engineListEl = document.getElementById('engineList');
+engines.forEach(name=>{
+  const row = document.createElement('div');
+  row.className = 'engine-row';
+  const led = document.createElement('span'); led.className = 'led';
+  row.appendChild(led);
+  row.append(name);
+  engineListEl.appendChild(row);
+});
+
+/* -------------------- GEMINI CONFIG -------------------- */
+// Change this if your account uses a different model name.
+const GEMINI_MODEL = "gemini-3.6-flash";
+document.getElementById('engineLabel').textContent = 'Engine: ' + GEMINI_MODEL;
+
+const SYSTEM_PROMPT = `You are an expert security auditor and senior software engineer.
+Analyze the provided source code and return ONLY a valid JSON object with a single key
+"issues" containing an array of identified problems, ordered most severe first.
+Each issue MUST have exactly these five keys:
+- "category": one of "Bug", "Security", "Code Smell"
+- "severity": one of "Critical", "High", "Medium", "Low"
+- "line": the integer line number in the submitted code the issue is most associated with, or null if it does not apply to one specific line
+- "explanation": a clear, concise explanation of the detected issue
+- "improvement": a concrete, actionable code suggestion for fixing it
+
+If no issues are found, return {"issues": []}. Do not include any text, markdown, or commentary outside the JSON object.`;
+
+/* -------------------- API KEY STORAGE -------------------- */
+const API_KEY_STORAGE = 'securai_gemini_api_key';
+const apiKeyInput = document.getElementById('apiKeyInput');
+const apiKeyField = document.getElementById('apiKeyField');
+const apiKeyStatus = document.getElementById('apiKeyStatus');
+
+function getApiKey(){ return (localStorage.getItem(API_KEY_STORAGE) || '').trim(); }
+function setApiKey(key){ localStorage.setItem(API_KEY_STORAGE, key); }
+function clearApiKey(){ localStorage.removeItem(API_KEY_STORAGE); }
+
+function setApiKeyStatus(text, cls){
+  apiKeyStatus.textContent = text;
+  apiKeyStatus.className = 'apikey-status ' + cls;
+}
+
+(function initApiKey(){
+  const existing = getApiKey();
+  if(existing){
+    apiKeyInput.value = existing;
+    setApiKeyStatus('Saved ✓ — stored only in this browser', 'ok');
+  } else {
+    setApiKeyStatus('No key saved yet', 'warn');
+  }
+})();
+
+document.getElementById('apiKeySave').addEventListener('click', ()=>{
+  const val = apiKeyInput.value.trim();
+  apiKeyField.classList.remove('err');
+  if(!val){
+    setApiKeyStatus('Paste a key first', 'error');
+    apiKeyField.classList.add('err');
+    return;
+  }
+  setApiKey(val);
+  setApiKeyStatus('Saved ✓ — stored only in this browser', 'ok');
+});
+
+document.getElementById('apiKeyClear').addEventListener('click', ()=>{
+  clearApiKey();
+  apiKeyInput.value = '';
+  apiKeyField.classList.remove('err');
+  setApiKeyStatus('Key removed', 'warn');
+});
+
+/* -------------------- GEMINI CALL -------------------- */
+async function auditWithGemini(code, apiKey){
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const body = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text: code }] }],
+    generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+  };
+
+  let res;
+  try{
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch(networkErr){
+    throw { kind: 'network', message: 'Could not reach Gemini. Check your internet connection and try again.' };
+  }
+
+  if(!res.ok){
+    let detail = '';
+    try { const errJson = await res.json(); detail = errJson?.error?.message || ''; } catch(_) {}
+    if(res.status === 400 || res.status === 403){
+      throw { kind: 'key', message: detail || 'Gemini rejected this API key.' };
+    }
+    if(res.status === 429){
+      throw { kind: 'rate', message: 'Rate limit or quota exceeded for this key. Wait a moment and try again.' };
+    }
+    throw { kind: 'api', message: detail || `Gemini returned an error (HTTP ${res.status}).` };
+  }
+
+  const data = await res.json();
+  const rawText = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  let cleaned = rawText.trim();
+
+  // Bulletproof JSON parsing: models sometimes wrap JSON in ```json fences.
+  if(cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
+  else if(cleaned.startsWith('```')) cleaned = cleaned.slice(3);
+  if(cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
+  cleaned = cleaned.trim();
+
+  let parsed;
+  try{
+    parsed = JSON.parse(cleaned);
+  } catch(e){
+    throw { kind: 'parse', message: "Gemini didn't return valid JSON. Please try again." };
+  }
+
+  const issues = Array.isArray(parsed?.issues) ? parsed.issues : null;
+  if(!issues){
+    throw { kind: 'shape', message: 'Unexpected response format from Gemini. Please try again.' };
+  }
+
+  const validSeverities = ['critical','high','medium','low'];
+  return issues.map((issue, idx)=>{
+    const severity = String(issue.severity || 'Low').toLowerCase();
+    const explanation = issue.explanation || 'No explanation provided.';
+    return {
+      id: 'ai-' + idx,
+      severity: validSeverities.includes(severity) ? severity : 'low',
+      category: issue.category || 'Code Smell',
+      title: explanation.split('\n')[0].slice(0, 110),
+      description: explanation,
+      fix: issue.improvement || 'No suggestion provided.',
+      line: Number.isInteger(issue.line) ? issue.line : null
+    };
+  });
+}
+
+/* -------------------- SCAN -------------------- */
+const runBtn = document.getElementById('runBtn');
+const runIcon = document.getElementById('runIcon');
+const runLabel = document.getElementById('runLabel');
+const scanProgress = document.getElementById('scanProgress');
+const consoleLog = document.getElementById('consoleLog');
+const resultsEl = document.getElementById('results');
+const metricStrip = document.getElementById('metricStrip');
+const issueContainer = document.getElementById('issueContainer');
+const reportTime = document.getElementById('reportTime');
+const statLines = document.getElementById('statLines');
+const statTime = document.getElementById('statTime');
+
+runIcon.appendChild(icon('play', 17));
+
+const logLines = [
+  'Parsing source into an AST…',
+  'Checking injection vectors…',
+  'Scanning for hardcoded secrets…',
+  'Reviewing cryptographic calls…',
+  'Cross-checking OWASP Top 10…',
+  'Compiling remediation…'
+];
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function playLogAnimation(){
+  return new Promise(resolve=>{
+    consoleLog.innerHTML = '';
+    logLines.forEach((line, idx)=>{
+      setTimeout(()=>{
+        const span = document.createElement('span');
+        span.textContent = '> ' + line;
+        consoleLog.appendChild(span);
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+        if(idx === logLines.length - 1) resolve();
+      }, idx * 260);
+    });
+  });
+}
+
+function resetRunButton(){
+  runBtn.disabled = false;
+  runIcon.innerHTML = '';
+  runIcon.appendChild(icon('play', 17));
+  runLabel.textContent = 'Run Security & Code Audit';
+  scanProgress.classList.remove('active');
+  consoleLog.classList.remove('show');
+}
+
+async function runScan(){
+  const code = codeInput.value;
+  if(!code.trim()){
+    codeInput.focus();
+    codeInput.style.borderColor = 'var(--crimson)';
+    setTimeout(()=>{ codeInput.style.borderColor=''; }, 900);
+    return;
+  }
+
+  const apiKey = getApiKey();
+  if(!apiKey){
+    apiKeyField.classList.add('err');
+    setApiKeyStatus('Add your Gemini API key to run an audit', 'error');
+    apiKeyInput.focus();
+    apiKeyField.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+
+  runBtn.disabled = true;
+  runIcon.innerHTML = '';
+  const spin = icon('loader-2', 17); spin.classList.add('spinner');
+  runIcon.appendChild(spin);
+  runLabel.textContent = 'Auditing…';
+  scanProgress.classList.add('active');
+  consoleLog.classList.add('show');
+
+  try{
+    const [findings] = await Promise.all([
+      auditWithGemini(code, apiKey),
+      playLogAnimation()
+    ]);
+    finishScan(findings, code.split('\n').length);
+  } catch(err){
+    resetRunButton();
+    showScanError(err);
+  }
+}
+
+function showScanError(err){
+  const message = (err && err.message) || 'Something went wrong while contacting Gemini. Please try again.';
+  metricStrip.innerHTML = '';
+  issueContainer.innerHTML = `
+    <div class="scan-error">
+      <h4>Audit failed</h4>
+      <p>${escapeHtml(message)}</p>
+    </div>`;
+  reportTime.textContent = 'Failed at ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  resultsEl.classList.add('show');
+  resultsEl.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  if(err && err.kind === 'key'){
+    apiKeyField.classList.add('err');
+    setApiKeyStatus('Key rejected — check it and save again', 'error');
+  }
+}
+
+function finishScan(findings, totalLines){
+  const order = {critical:0, high:1, medium:2, low:3};
+  findings.sort((a,b)=> order[a.severity]-order[b.severity]);
+
+  renderResults(findings, totalLines);
+  resetRunButton();
+
+  const now = new Date();
+  statLines.textContent = totalLines;
+  statTime.textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  reportTime.textContent = 'Completed ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+  resultsEl.classList.add('show');
+  resultsEl.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+const sevMeta = {
+  critical: { label:'Critical', color:'crimson', lucide:'octagon-alert' },
+  high:     { label:'High',     color:'amber',   lucide:'triangle-alert' },
+  medium:   { label:'Medium',   color:'yellow',  lucide:'circle-alert' },
+  low:      { label:'Low',      color:'azure',   lucide:'info' },
+};
+
+function renderResults(findings, totalLines){
+  const counts = { critical:0, high:0, medium:0, low:0 };
+  findings.forEach(f=> counts[f.severity]++);
+  const total = findings.length;
+
+  metricStrip.innerHTML = `
+    <div class="metric total"><div class="num">${total}</div><div class="lbl">Total Issues</div></div>
+    <div class="metric crit"><div class="num">${counts.critical}</div><div class="lbl">Critical</div></div>
+    <div class="metric high"><div class="num">${counts.high}</div><div class="lbl">High</div></div>
+    <div class="metric med"><div class="num">${counts.medium}</div><div class="lbl">Medium</div></div>
+    <div class="metric low"><div class="num">${counts.low}</div><div class="lbl">Low</div></div>
+  `;
+
+  if(total === 0){
+    issueContainer.innerHTML = `
+      <div class="clean-state">
+        <div class="icon-wrap">${''}</div>
+        <h4>No issues found</h4>
+        <p>SecurAI didn't flag anything across ${totalLines} line${totalLines===1?'':'s'} of code with its current ruleset.</p>
+      </div>`;
+    issueContainer.querySelector('.icon-wrap').appendChild(icon('shield-check', 28));
+  } else {
+    issueContainer.innerHTML = `<div class="issue-list" id="issueList"></div>`;
+    const list = document.getElementById('issueList');
+    findings.forEach((f, idx)=>{
+      const meta = sevMeta[f.severity];
+      const details = document.createElement('details');
+      details.className = 'issue sev-' + f.severity;
+      details.style.animationDelay = (idx * 45) + 'ms';
+      if(idx === 0) details.open = true;
+
+      details.innerHTML = `
+        <summary>
+          <span class="sev-badge"><i data-lucide="${meta.lucide}"></i>${meta.label}</span>
+          <span class="cat-tag">${f.category}</span>
+          <span class="issue-title">${escapeHtml(f.title)}</span>
+          <span class="line-chip">${f.line ? 'L' + f.line : '—'}</span>
+          <i data-lucide="chevron-down" class="chevron"></i>
+        </summary>
+        <div class="issue-body">
+          <p class="issue-desc">${escapeHtml(f.description)}</p>
+          <div class="fix-box">
+            <div class="fix-head">
+              <span class="fix-head-label"><i data-lucide="wrench"></i>Suggested Improvement</span>
+              <button class="copy-btn" type="button"><i data-lucide="copy"></i>Copy</button>
+            </div>
+            <pre class="fix-code">${escapeHtml(f.fix)}</pre>
+          </div>
+        </div>
+      `;
+
+      const copyBtn = details.querySelector('.copy-btn');
+      copyBtn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        navigator.clipboard.writeText(f.fix).then(()=>{
+          copyBtn.innerHTML = '';
+          copyBtn.appendChild(icon('check', 12));
+          copyBtn.append('Copied');
+          setTimeout(()=>{
+            copyBtn.innerHTML = '';
+            copyBtn.appendChild(icon('copy', 12));
+            copyBtn.append('Copy');
+            lucide.createIcons();
+          }, 1400);
+        });
+      });
+
+      list.appendChild(details);
+    });
+  }
+
+  lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+}
+
+runBtn.addEventListener('click', runScan);
+</script>
+</body>
+</html>
